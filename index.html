@@ -1,0 +1,1235 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#ffd94a">
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<!-- 教科書体フォント（き・さ 等を手書きの正しい形にする） -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Klee+One:wght@400;600&display=swap" rel="stylesheet">
+<title>がんばりバンク</title>
+<style>
+  :root{
+    --pink:#ff8fb1; --yellow:#ffd94a; --blue:#7ec8ff; --green:#8ce38f;
+    --purple:#c9a7ff; --orange:#ffb26b; --cream:#fff7e6; --ink:#5a4636;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent; font-family:"Rounded Mplus 1c","Hiragino Maru Gothic ProN","Yu Gothic",sans-serif;}
+  html,body{margin:0; height:100%;}
+  body{ background:var(--cream); color:var(--ink); user-select:none; overflow:hidden; display:flex; flex-direction:column; }
+  /* ポイントバー */
+  #topbar{ display:flex; align-items:center; justify-content:space-between; padding:12px 20px; background:var(--yellow); box-shadow:0 3px 0 rgba(0,0,0,.08); }
+  #points{ font-size:clamp(24px,5vw,40px); font-weight:900; display:flex; align-items:center; gap:8px; }
+  #modeBadge{ font-size:clamp(14px,3vw,22px); font-weight:800; background:#fff; border-radius:999px; padding:6px 16px; border:3px solid #fff0b0; }
+  #gearBtn{ background:none; border:none; font-size:clamp(22px,4vw,34px); cursor:pointer; padding:4px 8px; }
+  /* 画面共通 */
+  .screen{flex:1; display:none; flex-direction:column; padding:18px; overflow:auto;}
+  .screen.active{display:flex;}
+  h1{font-size:clamp(22px,4.5vw,36px); text-align:center; margin:6px 0 14px;}
+  .back{ align-self:flex-start; background:#fff; border:3px solid #eee; border-radius:999px; font-size:clamp(16px,3vw,24px); font-weight:800; padding:8px 20px; cursor:pointer; color:var(--ink); }
+  /* 大ボタングリッド（ホーム／おべんきょうメニュー） */
+  .bigbtns{ flex:1; display:grid; gap:18px; align-content:center; }
+  .g3{grid-template-columns:1fr 1fr 1fr;}
+  .g2{grid-template-columns:1fr 1fr;}
+  .bigbtn{ border:none; border-radius:28px; cursor:pointer; font-size:clamp(20px,3.6vw,32px); font-weight:900; color:#fff; padding:20px; min-height:30vh; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; box-shadow:0 8px 0 rgba(0,0,0,.15); transition:transform .06s; }
+  .bigbtn .emoji{font-size:clamp(42px,10vw,88px);}
+  .bigbtn:active{transform:translateY(4px); box-shadow:0 4px 0 rgba(0,0,0,.15);}
+  .b-study{background:var(--blue);} .b-help{background:var(--green);} .b-shop{background:var(--pink);} .b-zukan{background:var(--purple);}
+  .b-word{background:var(--orange);} .b-num{background:var(--blue);} .b-kata{background:var(--purple);} .b-write{background:var(--green);}
+  @media (max-width:700px){ .g3,.g2{grid-template-columns:1fr;} .bigbtn{min-height:20vh;} }
+  /* クイズ共通 */
+  .qprompt{font-size:clamp(22px,4vw,34px); text-align:center; margin:6px 0; font-weight:800;}
+  .qpicture{font-size:clamp(70px,18vw,150px); text-align:center; margin:6px 0;}
+  .speakBtn{ align-self:center; background:var(--yellow); border:none; border-radius:999px; font-size:clamp(16px,3vw,24px); font-weight:800; padding:10px 24px; cursor:pointer; margin-bottom:6px; }
+  .choices{flex:1; display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; align-content:center;}
+  .choice{ border:none; border-radius:24px; background:#fff; border:5px solid var(--purple); font-weight:600; color:var(--ink); cursor:pointer; min-height:26vh; box-shadow:0 6px 0 rgba(0,0,0,.12); font-size:clamp(46px,13vw,110px); font-family:"Klee One","Hiragino Maru Gothic ProN","Yu Gothic",sans-serif; }
+  .choice:active{transform:translateY(3px);}
+  .choice.ok{background:var(--green); border-color:var(--green); color:#fff;}
+  .choice.ng{background:#ffd0d0; border-color:#ffb0b0;}
+  /* かず サブモード */
+  .submodes{display:flex; gap:10px; margin-bottom:10px; justify-content:center; flex-wrap:wrap;}
+  .submodes button{ background:#fff; border:3px solid #eee; border-radius:999px; font-weight:800; font-size:clamp(15px,2.6vw,20px); padding:8px 18px; cursor:pointer;}
+  .submodes button.sel{background:var(--blue); color:#fff; border-color:var(--blue);}
+  .submodes button.locked{opacity:.55; background:#f0f0f0; border-color:#e5e5e5; color:#aaa;}
+  /* レベルバッジ（各おべんきょう画面の右上） */
+  .qtop{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:6px;}
+  .levelBadge{ background:#fff; border:3px solid #ffe08a; border-radius:999px; font-weight:900; font-size:clamp(13px,2.6vw,20px); padding:6px 16px; color:var(--ink); white-space:nowrap; }
+  .choice.wordcard{ font-family:"Rounded Mplus 1c","Hiragino Maru Gothic ProN","Yu Gothic",sans-serif; line-height:1.05; font-size:clamp(40px,11vw,90px); }
+  /* かく（なぞり書き） */
+  #writeWrap{flex:1; display:flex; flex-direction:column; align-items:center; gap:12px;}
+  #traceCanvas{ background:#fff; border-radius:24px; border:5px solid var(--green); touch-action:none; box-shadow:0 6px 0 rgba(0,0,0,.12);}
+  .writeBtns{display:flex; gap:14px;}
+  .writeBtns button{ border:none; border-radius:999px; font-weight:900; font-size:clamp(16px,3vw,24px); padding:12px 26px; cursor:pointer; box-shadow:0 4px 0 rgba(0,0,0,.12);}
+  #clearBtn{background:#fff; border:3px solid #eee;}
+  #doneWriteBtn{background:var(--green); color:#fff;}
+  /* おてつだい */
+  .chore{ display:flex; align-items:center; gap:16px; background:#fff; border-radius:22px; padding:14px 18px; margin-bottom:14px; box-shadow:0 4px 0 rgba(0,0,0,.08); }
+  .chore .cemoji{font-size:clamp(34px,7vw,54px);} .chore .cname{flex:1; font-size:clamp(18px,3.5vw,28px); font-weight:800;}
+  .chore .cpt{font-size:clamp(16px,3vw,24px); font-weight:900; color:var(--pink); margin-right:6px;}
+  .doneBtn{ background:var(--green); color:#fff; border:none; border-radius:999px; font-size:clamp(16px,3vw,24px); font-weight:900; padding:12px 22px; cursor:pointer; box-shadow:0 4px 0 rgba(0,0,0,.12);}
+  .doneBtn:active{transform:translateY(2px);}
+  .chore.claimed{opacity:.5;} .chore.claimed .doneBtn{background:#ccc; pointer-events:none;}
+  /* ショップ */
+  .reward{ display:flex; align-items:center; gap:16px; background:#fff; border-radius:22px; padding:16px 20px; margin-bottom:16px; box-shadow:0 4px 0 rgba(0,0,0,.08); }
+  .reward .remoji{font-size:clamp(38px,8vw,60px);} .reward .rname{flex:1; font-size:clamp(18px,3.5vw,30px); font-weight:800;}
+  .reward .rcost{font-size:clamp(18px,3.2vw,28px); font-weight:900; color:var(--blue); margin-right:6px;}
+  .getBtn{ background:var(--pink); color:#fff; border:none; border-radius:999px; font-size:clamp(16px,3vw,26px); font-weight:900; padding:12px 26px; cursor:pointer; box-shadow:0 4px 0 rgba(0,0,0,.12);}
+  .getBtn:disabled{background:#ccc;} .getBtn:active{transform:translateY(2px);}
+  /* オーバーレイ */
+  .overlay{ position:fixed; inset:0; background:rgba(0,0,0,.45); display:none; align-items:center; justify-content:center; padding:20px; z-index:50; }
+  .overlay.active{display:flex;}
+  .card{ background:#fff; border-radius:28px; padding:28px; max-width:560px; width:100%; text-align:center; box-shadow:0 12px 30px rgba(0,0,0,.3); max-height:88vh; overflow-y:auto; -webkit-overflow-scrolling:touch;}
+  .card h2{font-size:clamp(24px,5vw,38px); margin:0 0 14px;}
+  .card p{font-size:clamp(18px,3.5vw,26px); margin:8px 0;}
+  .card .big{font-size:clamp(64px,16vw,120px); margin:6px 0;}
+  .card button{ background:var(--yellow); border:none; border-radius:999px; font-weight:900; font-size:clamp(18px,3.5vw,26px); padding:12px 30px; margin-top:14px; cursor:pointer;}
+  #timerNum{font-size:clamp(70px,20vw,160px); font-weight:900; color:var(--blue);}
+  /* 設定 */
+  #setBody{text-align:left;}
+  #setBody label{display:block; font-weight:800; font-size:18px; margin:14px 0 4px;}
+  #setBody input{font-size:20px; padding:8px 12px; border-radius:12px; border:2px solid #ddd; width:110px;}
+  /* 設定のセクション（アコーディオン） */
+  details.setSec{ border:2px solid #f0e6d0; border-radius:16px; margin:10px 0; background:#fffdf5; }
+  details.setSec>summary{ cursor:pointer; list-style:none; font-weight:900; font-size:19px; padding:12px 14px; user-select:none; }
+  details.setSec>summary::-webkit-details-marker{display:none;}
+  details.setSec>summary::before{ content:'▸ '; color:#c9a86a; }
+  details.setSec[open]>summary::before{ content:'▾ '; }
+  details.setSec .secBody{ padding:0 14px 14px; }
+  details.setSec .secBody label:first-child{margin-top:4px;}
+  /* エディタ行（ごほうび・おてつだい） */
+  .editRow{ display:flex; align-items:center; gap:8px; margin:8px 0; flex-wrap:wrap; }
+  .editRow input.emojiIn{width:56px; text-align:center;}
+  .editRow input.nameIn{flex:1; min-width:120px; width:auto;}
+  .editRow input.numIn{width:76px;}
+  .editRow .delBtn{ background:#ffd0d0; border:none; border-radius:12px; font-weight:900; font-size:16px; padding:10px 14px; margin:0; cursor:pointer; }
+  .editRow .addBtn{ background:var(--green); color:#fff; border:none; border-radius:12px; font-weight:900; font-size:16px; padding:10px 16px; margin:0; cursor:pointer; }
+  .emojiPick{display:flex; gap:6px; flex-wrap:wrap; margin:4px 0 8px;}
+  .emojiPick button{ background:#fff; border:2px solid #eee; border-radius:10px; font-size:22px; padding:6px 10px; margin:0; cursor:pointer; }
+  .editHead{font-size:13px; color:#aaa; font-weight:800; margin:8px 0 0;}
+  /* こうかん履歴 */
+  .histRow{ display:flex; align-items:center; gap:8px; font-size:15px; padding:8px 4px; border-bottom:1px dashed #eee; }
+  .histRow .hName{flex:1; font-weight:800;}
+  .histRow .hWhen{color:#aaa; font-size:13px; white-space:nowrap;}
+  .histRow .hCost{font-weight:900; color:var(--blue); white-space:nowrap;}
+  .histRow.canceled .hName,.histRow.canceled .hCost{text-decoration:line-through; color:#bbb;}
+  .histRow .undoBtn{ background:var(--orange); color:#fff; border:none; border-radius:10px; font-weight:900; font-size:14px; padding:8px 12px; margin:0; cursor:pointer; white-space:nowrap; }
+  .histRow .undone{font-size:13px; color:#8ce38f; font-weight:900; white-space:nowrap;}
+  /* がんばりきろく表 */
+  table.logTbl{width:100%; border-collapse:collapse; font-size:15px;}
+  table.logTbl th,table.logTbl td{padding:6px 4px; text-align:center; border-bottom:1px solid #f0e6d0;}
+  table.logTbl th{font-size:13px; color:#aaa;}
+  /* シールちょう */
+  .stickerGrid{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; align-content:start; padding:6px;}
+  @media (max-width:700px){ .stickerGrid{grid-template-columns:repeat(3,1fr);} }
+  .sticker{ background:#fff; border-radius:20px; box-shadow:0 4px 0 rgba(0,0,0,.08); padding:12px 6px; text-align:center; }
+  .sticker .semoji{font-size:clamp(34px,8vw,56px); line-height:1.1;}
+  .sticker .sname{font-size:clamp(11px,2.4vw,15px); font-weight:800; margin-top:4px; color:var(--ink);}
+  .sticker.locked{opacity:.45; filter:grayscale(1);}
+  /* ごほうび時間チップ */
+  .timeChips{display:flex; flex-wrap:wrap; gap:10px; margin-top:6px;}
+  .timeChips button{ border:3px solid var(--blue); background:#fff; color:var(--ink); border-radius:999px; font-weight:900; font-size:clamp(15px,2.8vw,20px); padding:10px 16px; cursor:pointer; box-shadow:0 3px 0 rgba(0,0,0,.1); }
+  .timeChips button:disabled{opacity:.4; border-color:#ccc;}
+  .reward{flex-wrap:wrap;}
+  .modeToggle{display:flex; gap:10px; margin:8px 0;}
+  .modeToggle button{flex:1; border-radius:16px; border:3px solid #eee; background:#f5f5f5; padding:14px; font-weight:900; font-size:20px; margin:0;}
+  .modeToggle button.sel{background:var(--yellow); border-color:var(--yellow);}
+  .pinpad{display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; max-width:280px; margin:14px auto;}
+  .pinpad button{background:#f2f2f2; border:none; border-radius:16px; font-size:28px; font-weight:900; padding:16px; margin:0;}
+  #pinDisplay{font-size:40px; letter-spacing:12px; height:48px;}
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <div id="points"><span>⭐</span><span id="ptVal">0</span><span id="pageMeter" style="font-size:.55em; margin-left:10px;"></span></div>
+  <div id="modeBadge">へいじつ</div>
+  <button id="gearBtn" title="ほごしゃ">⚙️</button>
+</div>
+
+<!-- ホーム -->
+<section id="home" class="screen active">
+  <h1 id="homeGreet" style="margin:10px 0 2px; font-size:clamp(20px,4vw,32px);">🏦 がんばりバンク</h1>
+  <div class="bigbtns g2">
+    <button class="bigbtn b-study" onclick="go('studyMenu')"><span class="emoji">✏️</span>おべんきょう</button>
+    <button class="bigbtn b-help" onclick="go('help')"><span class="emoji">🧺</span>おてつだい</button>
+    <button class="bigbtn b-shop" onclick="go('shop')"><span class="emoji">🎁</span>ごほうび</button>
+    <button class="bigbtn b-zukan" onclick="go('zukan')"><span class="emoji">🏅</span>ずかん</button>
+  </div>
+</section>
+
+<!-- おべんきょうメニュー -->
+<section id="studyMenu" class="screen">
+  <button class="back" onclick="go('home')">← もどる</button>
+  <div class="bigbtns g2">
+    <button class="bigbtn b-word" onclick="go('word')"><span class="emoji">🧩</span>ことばあそび</button>
+    <button class="bigbtn b-num" onclick="go('num')"><span class="emoji">🔢</span>かず・けいさん</button>
+    <button class="bigbtn b-kata" onclick="go('kata')"><span class="emoji">🅰️</span>カタカナ</button>
+    <button class="bigbtn b-write" onclick="go('write')"><span class="emoji">✍️</span>ひらがなを かく</button>
+  </div>
+</section>
+
+<!-- ことばあそび -->
+<section id="word" class="screen">
+  <div class="qtop"><button class="back" onclick="go('studyMenu')">← もどる</button><span class="levelBadge" id="wordLv"></span></div>
+  <div class="submodes">
+    <button id="wm-first" onclick="setWordMode('first')">さいしょの おと</button>
+    <button id="wm-last" onclick="setWordMode('last')">おわりの おと</button>
+    <button id="wm-siri" onclick="setWordMode('siri')">しりとり</button>
+  </div>
+  <div class="qpicture" id="wordPic">🍎</div>
+  <div class="qprompt" id="wordPrompt">さいしょの もじは？</div>
+  <button class="speakBtn" onclick="sayWord()">🔊 もういちど きく</button>
+  <div class="choices" id="wordChoices"></div>
+</section>
+
+<!-- かず・けいさん -->
+<section id="num" class="screen">
+  <div class="qtop"><button class="back" onclick="go('studyMenu')">← もどる</button><span class="levelBadge" id="numLv"></span></div>
+  <div class="submodes">
+    <button id="sm-count" onclick="setNumMode('count')">かぞえる</button>
+    <button id="sm-add" onclick="setNumMode('add')">たしざん</button>
+    <button id="sm-sub" onclick="setNumMode('sub')">ひきざん</button>
+  </div>
+  <div class="qprompt" id="numPrompt"></div>
+  <button class="speakBtn" onclick="sayNum()">🔊 もういちど きく</button>
+  <div class="choices" id="numChoices"></div>
+</section>
+
+<!-- カタカナ -->
+<section id="kata" class="screen">
+  <div class="qtop"><button class="back" onclick="go('studyMenu')">← もどる</button><span class="levelBadge" id="kataLv"></span></div>
+  <div class="submodes">
+    <button id="km-read" onclick="setKataMode('read')">よむ</button>
+    <button id="km-match" onclick="setKataMode('match')">ひらがなと カタカナ</button>
+    <button id="km-word" onclick="setKataMode('word')">カタカナ ことば</button>
+  </div>
+  <div class="qpicture" id="kataPic" style="display:none;">🍌</div>
+  <div class="qprompt" id="kataPrompt">「ア」は どれかな？</div>
+  <button class="speakBtn" onclick="sayKata()">🔊 もういちど きく</button>
+  <div class="choices" id="kataChoices"></div>
+</section>
+
+<!-- ひらがな・カタカナを かく -->
+<section id="write" class="screen">
+  <div class="qtop"><button class="back" onclick="go('studyMenu')">← もどる</button><span class="levelBadge" id="writeLv"></span></div>
+  <div class="submodes">
+    <button id="ws-hira" onclick="setWriteMode('hira')">ひらがな</button>
+    <button id="ws-kata" onclick="setWriteMode('kata')">カタカナ</button>
+  </div>
+  <div class="qprompt" id="writePrompt">「あ」を なぞって かこう！</div>
+  <div id="writeWrap">
+    <canvas id="traceCanvas"></canvas>
+    <div class="writeBtns">
+      <button id="clearBtn" onclick="clearTrace()">けす</button>
+      <button id="doneWriteBtn" onclick="finishWrite()">かけた！</button>
+    </div>
+  </div>
+</section>
+
+<!-- おてつだい -->
+<section id="help" class="screen">
+  <button class="back" onclick="go('home')">← もどる</button>
+  <h1>おてつだい できたかな？</h1>
+  <div id="choreList"></div>
+</section>
+
+<!-- ごほうび -->
+<section id="shop" class="screen">
+  <button class="back" onclick="go('home')">← もどる</button>
+  <h1>🎁 ごほうび ショップ</h1>
+  <div id="rewardList"></div>
+</section>
+
+<!-- ずかん（シールちょう） -->
+<section id="zukan" class="screen">
+  <button class="back" onclick="go('home')">← もどる</button>
+  <h1>🏅 シールちょう</h1>
+  <div id="stickerGrid" class="stickerGrid"></div>
+</section>
+
+<!-- おいわい -->
+<div id="celebrate" class="overlay">
+  <div class="card">
+    <div class="big" id="celeEmoji">🎉</div>
+    <h2 id="celeTitle">せいかい！</h2>
+    <p id="celeMsg">+1 ポイント</p>
+    <button onclick="closeOverlay('celebrate')">つぎへ</button>
+  </div>
+</div>
+
+<!-- 実物ごほうびの かくにん -->
+<div id="confirm" class="overlay">
+  <div class="card">
+    <div class="big" id="confirmEmoji">🎰</div>
+    <p id="confirmMsg">ほんとうに こうかんする？</p>
+    <button onclick="realYes()" style="background:var(--green);color:#fff;">こうかんする！</button>
+    <button onclick="realNo()" style="background:#eee;">やめとく</button>
+  </div>
+</div>
+
+<!-- Switch2タイマー -->
+<div id="timer" class="overlay">
+  <div class="card">
+    <div id="ghost" style="font-size:clamp(60px,16vw,120px); display:none;">👻</div>
+    <h2 id="timerTitle">🎮 スイッチ タイム</h2>
+    <div id="timerNum">30:00</div>
+    <p id="timerMsg">タイマーが なったら おしまいだよ</p>
+    <div id="timerBtns">
+      <button onclick="stopTimer()" style="background:#eee;">タイマーを とめる</button>
+    </div>
+  </div>
+</div>
+
+<!-- PIN -->
+<div id="pin" class="overlay">
+  <div class="card">
+    <h2>ほごしゃ せってい</h2>
+    <p>あんしょうばんごうを いれてね</p>
+    <div id="pinDisplay"></div>
+    <div class="pinpad">
+      <button onclick="pinKey('1')">1</button><button onclick="pinKey('2')">2</button><button onclick="pinKey('3')">3</button>
+      <button onclick="pinKey('4')">4</button><button onclick="pinKey('5')">5</button><button onclick="pinKey('6')">6</button>
+      <button onclick="pinKey('7')">7</button><button onclick="pinKey('8')">8</button><button onclick="pinKey('9')">9</button>
+      <button onclick="pinDel()">←</button><button onclick="pinKey('0')">0</button><button onclick="closeOverlay('pin')">✕</button>
+    </div>
+    <p style="font-size:14px;color:#aaa">さいしょは 0000 だよ</p>
+  </div>
+</div>
+
+<!-- 設定 -->
+<div id="settings" class="overlay">
+  <div class="card">
+    <h2>⚙️ せってい</h2>
+    <div id="setBody">
+
+      <details class="setSec">
+        <summary>👶 おなまえ</summary>
+        <div class="secBody">
+          <label>おなまえ（くうらん＝なまえなし）</label>
+          <input id="setKidName" type="text" placeholder="おなまえ" style="width:auto; min-width:150px;">
+        </div>
+      </details>
+
+      <details class="setSec" open>
+        <summary>📅 きょうの モード</summary>
+        <div class="secBody">
+          <div class="modeToggle">
+            <button id="mWeekday" onclick="setMode('weekday')">へいじつ<br><small>1ページ=3もん</small></button>
+            <button id="mHoliday" onclick="setMode('holiday')">おやすみ<br><small>1ページ=5もん</small></button>
+          </div>
+          <p id="todayInfo" style="font-size:15px;color:#888;margin:10px 0 0;"></p>
+        </div>
+      </details>
+
+      <details class="setSec">
+        <summary>⭐ ポイントの ルール</summary>
+        <div class="secBody">
+          <label>なんぷんで 1ポイント（ごほうびの ねだん）</label>
+          <input id="setMinPerPt" type="number" min="1">
+          <label>じかんに やめられたら ボーナスポイント</label>
+          <input id="setStopBonus" type="number" min="0">
+          <label>おばけが くるまでの じかん（ぷん）</label>
+          <input id="setGraceMin" type="number" min="1">
+          <label>おべんきょうポイントの 1にちの うわげん（ページすう・0=むせいげん）</label>
+          <input id="setDailyCap" type="number" min="0">
+        </div>
+      </details>
+
+      <details class="setSec">
+        <summary>🎁 ごほうびの へんしゅう</summary>
+        <div class="secBody">
+          <div id="rewardEditor"></div>
+          <p class="editHead">あたらしい ごほうびを ついか</p>
+          <div class="emojiPick" id="rewardEmojiPick"></div>
+          <div class="editRow">
+            <input class="emojiIn" id="newRewardEmoji" maxlength="2" placeholder="🎁">
+            <input class="nameIn" id="newRewardName" placeholder="なまえ（例：おでかけ）">
+            <input class="numIn" id="newRewardCost" type="number" min="1" placeholder="pt">
+            <button class="addBtn" onclick="addReward()">ついか</button>
+          </div>
+        </div>
+      </details>
+
+      <details class="setSec">
+        <summary>🧺 おてつだいの へんしゅう</summary>
+        <div class="secBody">
+          <div id="choreEditor"></div>
+          <p class="editHead">あたらしい おてつだいを ついか（かいすう＝1にちに なんかい）</p>
+          <div class="emojiPick" id="choreEmojiPick"></div>
+          <div class="editRow">
+            <input class="emojiIn" id="newChoreEmoji" maxlength="2" placeholder="🧹">
+            <input class="nameIn" id="newChoreName" placeholder="なまえ（例：おはなに みずやり）">
+            <input class="numIn" id="newChorePt" type="number" min="1" placeholder="pt">
+            <input class="numIn" id="newChoreMax" type="number" min="1" placeholder="かいすう">
+            <button class="addBtn" onclick="addChore()">ついか</button>
+          </div>
+        </div>
+      </details>
+
+      <details class="setSec">
+        <summary>🎫 こうかんの きろく</summary>
+        <div class="secBody">
+          <div id="histList"></div>
+          <label>⭐ ポイントの ちょうせい（おまけ・おわび用）</label>
+          <div class="editRow">
+            <input class="numIn" id="adjustPt" type="number" min="1" placeholder="pt">
+            <button class="addBtn" onclick="adjustPoints(1)">＋つける</button>
+            <button class="delBtn" onclick="adjustPoints(-1)">−ひく</button>
+          </div>
+        </div>
+      </details>
+
+      <details class="setSec">
+        <summary>📊 がんばりきろく（7にち）</summary>
+        <div class="secBody"><div id="dailyLogView"></div></div>
+      </details>
+
+      <details class="setSec">
+        <summary>🔧 そのほか</summary>
+        <div class="secBody">
+          <label>あんしょうばんごうの へんこう（4けた・あけたままなら そのまま）</label>
+          <input id="setPin" type="tel" maxlength="4" placeholder="****">
+        </div>
+      </details>
+
+    </div>
+    <button onclick="saveSettings()">ほぞんする</button>
+    <button style="background:#eee" onclick="resetDay()">きょうの きろくを リセット</button>
+    <button style="background:#eee" onclick="resetLevels()">レベルを ぜんぶ 1に もどす</button>
+    <button style="background:#eee" onclick="closeOverlay('settings')">とじる</button>
+  </div>
+</div>
+
+<script>
+/* ============ 保存データ ============ */
+// 初期のおてつだいリスト（保護者設定で自由に編集できる。これは初回のタネ）
+const CHORE_SEED = [
+  {id:'toy',emoji:'🧸',name:'おもちゃ お片付け',pt:2,max:2},
+  {id:'wash',emoji:'🧺',name:'せんたくもの だした',pt:1,max:1},
+  {id:'teeth',emoji:'🦷',name:'はみがき できた',pt:1,max:2},
+  {id:'dish',emoji:'🍽',name:'おさら さげた',pt:1,max:2},
+  {id:'futon',emoji:'🛏',name:'おふとん なおした',pt:1,max:1},
+];
+// 経済バージョン2＝ページ制（1ページ=1pt・5分=1pt）。旧データは load() でリスケールする
+const DEFAULTS = { kidName:'', points:0, mode:'weekday', minPerPt:5, swMin:30, stopBonus:2, graceMin:5, pin:'0000',
+  gachaCost:100, toyCost:300, econV:2, pageProg:0,
+  dailyCap:5, earnedToday:0,
+  rewards:[ {id:'gacha',e:'🎰',n:'ガチャガチャ 1かい',cost:15},
+            {id:'toy',  e:'🧸',n:'おもちゃを かう',  cost:40} ],
+  chores: JSON.parse(JSON.stringify(CHORE_SEED)),
+  history:[], dailyLog:{},
+  levels:{word:1,num:1,kata:1,write:1}, streaks:{word:0,num:0,kata:0,write:0},
+  stickers:[], day:todayStr(), correctCount:0, choreCounts:{} };
+function todayStr(){ const d=new Date(); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
+function freshDefaults(){ return JSON.parse(JSON.stringify(DEFAULTS)); }
+let S = load();
+function load(){
+  try{
+    const saved = JSON.parse(localStorage.getItem('ganbari')||'{}');
+    const s = Object.assign(freshDefaults(), saved);
+    // ネストしたオブジェクトは既存の版から欠けたキーを補う（レベル・シールは日をまたいでも保持）
+    s.levels  = Object.assign({word:1,num:1,kata:1,write:1}, saved.levels||{});
+    s.streaks = Object.assign({word:0,num:0,kata:0,write:0}, saved.streaks||{});
+    if(!Array.isArray(s.stickers)) s.stickers=[];
+    if(typeof s.choreCounts!=='object'||!s.choreCounts) s.choreCounts={};
+    // 旧版（choresClaimed 配列）からの移行
+    if(Array.isArray(saved.choresClaimed)){ saved.choresClaimed.forEach(id=>{ s.choreCounts[id]=(s.choreCounts[id]||0)+1; }); }
+    if(!(typeof s.minPerPt==='number' && s.minPerPt>0)) s.minPerPt=5;
+    // v9→v10 移行：ごほうび/おてつだいを編集可能リストに（旧gachaCost/toyCostの値段を引き継ぐ）
+    // ※旧データがあるときだけ。新規インストールは DEFAULTS の新価格のまま
+    if(Object.keys(saved).length && !Array.isArray(saved.rewards)){
+      s.rewards=[ {id:'gacha',e:'🎰',n:'ガチャガチャ 1かい',cost:+saved.gachaCost||100},
+                  {id:'toy',  e:'🧸',n:'おもちゃを かう',  cost:+saved.toyCost||300} ];
+    }
+    if(!Array.isArray(saved.chores) || !saved.chores.length){ s.chores=JSON.parse(JSON.stringify(CHORE_SEED)); }
+    if(!Array.isArray(s.history)) s.history=[];
+    if(typeof s.dailyLog!=='object'||!s.dailyLog) s.dailyLog={};
+    // 経済v2移行（旧データがあって、まだページ制でないときだけ一度リスケール）
+    if(Object.keys(saved).length && saved.econV!==2){
+      s.minPerPt=5; s.dailyCap=5; s.stopBonus=2;
+      // 実際に旧保存されていたおてつだいだけ縮小（新シードは既に新レート）
+      if(Array.isArray(saved.chores)){ s.chores.forEach(c=>{ c.pt=Math.max(1,Math.round(c.pt/3)); }); }
+      s.rewards.forEach(r=>{
+        if(r.id==='gacha') r.cost=15; else if(r.id==='toy') r.cost=40;
+        else r.cost=Math.max(1,Math.round(r.cost/6));
+      });
+      // ポイント残高も価値を保存して換算（旧1pt=1分 → 新1pt=5分）
+      s.points=Math.round(s.points/5);
+      s.earnedToday=Math.min(s.dailyCap, Math.round(s.earnedToday/5));
+      s.econV=2;
+    }
+    if(typeof s.pageProg!=='number'||s.pageProg<0) s.pageProg=0;
+    // dailyLog は直近14日だけ残す
+    const keys=Object.keys(s.dailyLog);
+    if(keys.length>14){ keys.sort(dayKeyCmp).slice(0,keys.length-14).forEach(k=>delete s.dailyLog[k]); }
+    if(s.day !== todayStr()){ s.day=todayStr(); s.correctCount=0; s.choreCounts={}; s.earnedToday=0; s.pageProg=0; s.streaks={word:0,num:0,kata:0,write:0}; }
+    return s;
+  }catch(e){ return freshDefaults(); }
+}
+// 'YYYY-M-D' 文字列を日付順に比べる
+function dayKeyCmp(a,b){ const pa=a.split('-').map(Number), pb=b.split('-').map(Number);
+  return (pa[0]-pb[0])||(pa[1]-pb[1])||(pa[2]-pb[2]); }
+// きょうの記録枠（study=勉強pt / chore=おてつだい回数 / spent=使ったpt）
+function todayLog(){ const k=todayStr(); if(!S.dailyLog[k]) S.dailyLog[k]={study:0,chore:0,spent:0}; return S.dailyLog[k]; }
+function save(){ localStorage.setItem('ganbari', JSON.stringify(S)); render(); }
+
+/* ============ 音声 ============ */
+function speak(text, rate=0.95){
+  try{ speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(text);
+    u.lang='ja-JP'; u.rate=rate; u.pitch=1.2; speechSynthesis.speak(u); }catch(e){}
+}
+
+/* ============ ポイント上限（1日のおべんきょうポイント） ============ */
+function addStudyPoints(want){
+  let gain=want;
+  if(S.dailyCap && S.dailyCap>0){ const room=Math.max(0, S.dailyCap - S.earnedToday); gain=Math.min(want, room); S.earnedToday+=gain; }
+  S.points+=gain; todayLog().study+=gain; return gain;
+}
+/* ============ レベル（ジャンルごと・連続5問でアップ／間違いは-1） ============ */
+const MAXLV=3, STREAK_UP=5;
+// レベルアップで あたらしく あそべるようになる サブモード
+const SUBMODE_UNLOCK={ word:{2:'おわりの おと',3:'しりとり'}, num:{2:'たしざん',3:'ひきざん'},
+  kata:{2:'ひらがなと カタカナ',3:'カタカナ ことば'}, write:{2:'カタカナを かく'} };
+function handleStreak(genre){
+  S.streaks[genre]=(S.streaks[genre]||0)+1;
+  if(S.streaks[genre]>=STREAK_UP){
+    S.streaks[genre]=0;
+    if(S.levels[genre]<MAXLV){ S.levels[genre]++; return {levelUp:true, lvl:S.levels[genre]}; }
+    return {streak5:true};
+  }
+  return {};
+}
+function handleWrong(genre){ if(S.streaks[genre]>0){ S.streaks[genre]--; save(); } }
+
+/* ============ シール（ずかん） ============ */
+const STICKERS=[
+  {id:'word2',e:'🧩',n:'ことば レベル2'},{id:'word3',e:'📖',n:'ことば マスター'},
+  {id:'num2',e:'🔢',n:'かず レベル2'},{id:'num3',e:'➕',n:'かず マスター'},
+  {id:'kata2',e:'🐱',n:'カタカナ レベル2'},{id:'kata3',e:'🎌',n:'カタカナ マスター'},
+  {id:'write2',e:'✏️',n:'かく レベル2'},{id:'write3',e:'🖌️',n:'かく マスター'},
+  {id:'firstReward',e:'🎁',n:'はじめての ごほうび'},{id:'chore',e:'🧺',n:'おてつだい めいじん'},
+  {id:'allLv2',e:'🌟',n:'ぜんぶ レベル2'},{id:'allLv3',e:'👑',n:'ぜんぶ マスター'}
+];
+function grantSticker(id){ if(S.stickers.includes(id)) return false; S.stickers.push(id); return true; }
+function checkAllLevelStickers(){ const ls=Object.values(S.levels);
+  if(ls.every(l=>l>=2)) grantSticker('allLv2'); if(ls.every(l=>l>=3)) grantSticker('allLv3'); }
+function renderZukan(){
+  const box=document.getElementById('stickerGrid'); box.innerHTML='';
+  STICKERS.forEach(s=>{ const got=S.stickers.includes(s.id);
+    const d=document.createElement('div'); d.className='sticker'+(got?'':' locked');
+    d.innerHTML='<div class="semoji">'+(got?s.e:'❓')+'</div><div class="sname">'+(got?s.n:'？？？')+'</div>';
+    box.appendChild(d);
+  });
+}
+
+/* ============ 共通：正解したとき（ページ制：平日3問/休日5問で1ページ＝+1pt） ============ */
+// opts: {praise, emoji, next, delay}
+function answerCorrect(genre, opts){
+  S.correctCount+=1; S.pageProg+=1;
+  const need=(S.mode==='weekday')?3:5;
+  const pageDone = S.pageProg>=need;
+  let gained=0;
+  if(pageDone){ S.pageProg=0; gained=addStudyPoints(1); }
+  const lv=handleStreak(genre);
+  let emoji=opts.emoji||'🎉', title=opts.praise||'せいかい！', msg;
+  if(pageDone){
+    emoji='📖'; title='1ページ クリア！';
+    msg = gained>0 ? '+1 ポイント！' : 'きょうの ポイントは まんたん！ よく がんばったね';
+  } else {
+    msg='あと '+(need-S.pageProg)+'もん で 1ページ！';
+  }
+  if(lv.levelUp){
+    grantSticker(genre+lv.lvl); checkAllLevelStickers();
+    const uni=(SUBMODE_UNLOCK[genre]||{})[lv.lvl];
+    emoji='⭐'; title='レベルアップ！ レベル'+lv.lvl+'！';
+    const parts=[]; if(pageDone&&gained>0)parts.push('📖+1 ポイント'); if(uni)parts.push('あたらしい あそび「'+uni+'」！'); parts.push('🏅シールも みてね');
+    msg=parts.join(' / ');
+    speak('レベルアップ！'+(uni?(' あたらしい あそび、'+uni):''));
+    if(genre==='word') renderWordSubmodes(); if(genre==='num') renderNumSubmodes();
+    if(genre==='kata') renderKataSubmodes(); if(genre==='write') renderWriteSubmodes();
+  } else if(lv.streak5){ title='れんぞく 5もん！ すごい！'; speak(opts.praise||'せいかい！'); }
+  else if(pageDone){ speak('1ページ クリア！'+(gained>0?' ポイント げっと！':'')); }
+  else { speak(opts.praise||'せいかい！'); }
+  save();
+  celebrate(emoji, title, msg);
+  if(opts.next) setTimeout(opts.next, opts.delay||900);
+}
+/* レベルバッジ＝レベル＋れんぞくメーター（レベル1 🔥🔥☆☆☆） */
+function lvStars(genre){
+  const l=S.levels[genre], st=S.streaks[genre]||0;
+  if(l>=MAXLV) return 'レベル'+l+' 🔥さいこう！';
+  return 'レベル'+l+' '+'🔥'.repeat(st)+'☆'.repeat(STREAK_UP-st);
+}
+function renderLevels(){ ['word','num','kata','write'].forEach(g=>{ const el=document.getElementById(g+'Lv'); if(el) el.textContent=lvStars(g); }); }
+/* サブモードの解放（レベルで あそべる あそびが 増える） */
+const WORD_SUB_LABEL={first:'さいしょの おと',last:'おわりの おと',siri:'しりとり'};
+const NUM_SUB_LABEL={count:'かぞえる',add:'たしざん',sub:'ひきざん'};
+const KATA_SUB_LABEL={read:'よむ',match:'ひらがなと カタカナ',word:'カタカナ ことば'};
+const WRITE_SUB_LABEL={hira:'ひらがな',kata:'カタカナ'};
+function wordUnlocked(m){ const l=S.levels.word; return m==='first'||(m==='last'&&l>=2)||(m==='siri'&&l>=3); }
+function numUnlocked(m){ const l=S.levels.num; return m==='count'||(m==='add'&&l>=2)||(m==='sub'&&l>=3); }
+function kataUnlocked(m){ const l=S.levels.kata; return m==='read'||(m==='match'&&l>=2)||(m==='word'&&l>=3); }
+function writeUnlocked(m){ const l=S.levels.write; return m==='hira'||(m==='kata'&&l>=2); }
+function renderWordSubmodes(){ [['first','wm-first'],['last','wm-last'],['siri','wm-siri']].forEach(([m,id])=>{ const b=document.getElementById(id); if(!b)return; const ok=wordUnlocked(m); b.classList.toggle('locked',!ok); b.textContent=(ok?'':'🔒 ')+WORD_SUB_LABEL[m]; }); }
+function renderNumSubmodes(){ [['count','sm-count'],['add','sm-add'],['sub','sm-sub']].forEach(([m,id])=>{ const b=document.getElementById(id); if(!b)return; const ok=numUnlocked(m); b.classList.toggle('locked',!ok); b.textContent=(ok?'':'🔒 ')+NUM_SUB_LABEL[m]; }); }
+function renderKataSubmodes(){ [['read','km-read'],['match','km-match'],['word','km-word']].forEach(([m,id])=>{ const b=document.getElementById(id); if(!b)return; const ok=kataUnlocked(m); b.classList.toggle('locked',!ok); b.textContent=(ok?'':'🔒 ')+KATA_SUB_LABEL[m]; }); }
+function renderWriteSubmodes(){ [['hira','ws-hira'],['kata','ws-kata']].forEach(([m,id])=>{ const b=document.getElementById(id); if(!b)return; const ok=writeUnlocked(m); b.classList.toggle('locked',!ok); b.textContent=(ok?'':'🔒 ')+WRITE_SUB_LABEL[m]; }); }
+
+/* ============ 選択肢クイズ 共通ビルダー ============ */
+function buildChoices(containerId, choices, correct, onWrong){
+  const box=document.getElementById(containerId); box.innerHTML=''; let locked=false, onCorrect=null;
+  choices.forEach(ch=>{
+    const b=document.createElement('button'); b.className='choice'; b.textContent=ch;
+    b.onclick=()=>{
+      if(locked) return; locked=true;                       // 1回タップしたらロック（連打防止）
+      if(String(ch)===String(correct)){ b.classList.add('ok'); if(onCorrect)onCorrect(); }
+      else{ b.classList.add('ng'); if(onWrong)onWrong(); }   // まちがいでも つぎの もんだいへ
+    };
+    box.appendChild(b);
+  });
+  return { setCorrect(fn){ onCorrect=fn; } };
+}
+// まちがえたとき：やさしく声かけして つぎの もんだいへ（適当に押しても止まらない）
+function wrongNext(genre, nextFn){ speak('つぎ いこう'); handleWrong(genre); setTimeout(nextFn, 800); }
+function shuffle(a){ return [...a].sort(()=>Math.random()-0.5); }
+function rnd(a){ return a[Math.floor(Math.random()*a.length)]; }
+function sample(arr,n,exclude=[]){ return shuffle(arr.filter(x=>!exclude.includes(x))).slice(0,n); }
+
+/* ============ ことばあそび（さいしょ／おわり／しりとり） ============ */
+const WORDS = [
+  {e:'🍎',w:'りんご'},{e:'🐶',w:'いぬ'},{e:'🐱',w:'ねこ'},{e:'🐰',w:'うさぎ'},
+  {e:'🚗',w:'くるま'},{e:'🐟',w:'さかな'},{e:'👓',w:'めがね'},{e:'⭐',w:'ほし'},
+  {e:'🌙',w:'つき'},{e:'🌸',w:'はな'},{e:'☂️',w:'かさ'},{e:'⛵',w:'ふね'},
+  {e:'🐤',w:'ひよこ'},{e:'🍅',w:'とまと'},{e:'🥕',w:'にんじん'},{e:'🐍',w:'へび'},
+  {e:'🍊',w:'みかん'},{e:'🍑',w:'もも'},{e:'🐎',w:'うま'},{e:'🐘',w:'ぞう'},
+  {e:'🍌',w:'ばなな'},{e:'🍇',w:'ぶどう'},{e:'🍓',w:'いちご'},{e:'🐝',w:'はち'},
+  {e:'🐸',w:'かえる'},{e:'🌻',w:'ひまわり'},{e:'🐢',w:'かめ'},{e:'🐊',w:'わに'},
+  {e:'🦒',w:'きりん'},{e:'🐻',w:'くま'},{e:'🐡',w:'ふぐ'},{e:'🍚',w:'ごはん'},
+  {e:'🧦',w:'くつした'},{e:'🧢',w:'ぼうし'},{e:'🔑',w:'かぎ'},{e:'🪑',w:'いす'},
+  {e:'🌈',w:'にじ'},{e:'🍄',w:'きのこ'},{e:'🐮',w:'うし'},{e:'🚪',w:'とびら'}
+];
+function firstMora(w){ return w[0]; }
+function lastMora(w){ return w[w.length-1]; }
+let wordMode='first', curWord=null, siriCur=null;
+function setWordMode(m){
+  if(!wordUnlocked(m)){ speak('まだ ひみつだよ。 レベルアップ したら あそべるよ'); return; }
+  wordMode=m; renderWordSubmodes();
+  document.querySelectorAll('#word .submodes button').forEach(b=>b.classList.remove('sel'));
+  const id={first:'wm-first',last:'wm-last',siri:'wm-siri'}[m];
+  const el=document.getElementById(id); if(el) el.classList.add('sel');
+  newWord();
+}
+function newWord(){
+  const nChoice=(S.levels.word>=3)?4:3;
+  if(wordMode==='siri'){ newSiri(nChoice); return; }
+  curWord=rnd(WORDS);
+  const correct=(wordMode==='first')?firstMora(curWord.w):lastMora(curWord.w);
+  const label=(wordMode==='first')?'さいしょ':'おわり';
+  document.getElementById('wordPic').textContent=curWord.e;
+  document.getElementById('wordPrompt').textContent='「'+curWord.w+'」の '+label+'の もじは？';
+  const pool=WORDS.map(x=> wordMode==='first'?firstMora(x.w):lastMora(x.w)).filter((v,i,a)=>a.indexOf(v)===i);
+  const others=sample(pool, nChoice-1, [correct]);
+  const choices=shuffle([correct, ...others]);
+  const q=buildChoices('wordChoices', choices, correct, ()=>wrongNext('word', newWord));
+  q.setCorrect(()=>{ answerCorrect('word',{praise:'せいかい！', next:newWord}); });
+  sayWord();
+}
+function newSiri(nChoice){
+  const starters={}; WORDS.forEach(x=>{ const f=firstMora(x.w); (starters[f]=starters[f]||[]).push(x); });
+  // 「おわりの音」で始まる別の単語が存在するものだけ、しりとりのお題にする
+  const valid=WORDS.filter(x=>{ const l=lastMora(x.w); return (starters[l]||[]).some(y=>y!==x); });
+  siriCur=rnd(valid.length?valid:WORDS);
+  const need=lastMora(siriCur.w);
+  const correct=rnd((starters[need]||[]).filter(y=>y!==siriCur));
+  document.getElementById('wordPic').textContent=siriCur.e;
+  document.getElementById('wordPrompt').textContent='「'+siriCur.w+'」の つぎ！ 「'+need+'」から はじまるのは？';
+  const wrongPool=WORDS.filter(y=> firstMora(y.w)!==need && y!==siriCur && y!==correct);
+  const opts=shuffle([correct, ...sample(wrongPool, nChoice-1)]);
+  const box=document.getElementById('wordChoices'); box.innerHTML=''; let locked=false;
+  opts.forEach(it=>{
+    const b=document.createElement('button'); b.className='choice wordcard';
+    b.innerHTML='<div style="font-size:1.3em">'+it.e+'</div><div style="font-size:.42em">'+it.w+'</div>';
+    b.onclick=()=>{
+      if(locked) return; locked=true;
+      if(it===correct){ b.classList.add('ok'); answerCorrect('word',{praise:'せいかい！', next:newWord}); }
+      else{ b.classList.add('ng'); wrongNext('word', newWord); }
+    };
+    box.appendChild(b);
+  });
+  sayWord();
+}
+function sayWord(){
+  if(wordMode==='siri'){ if(siriCur) speak(siriCur.w+'。 つぎは 「'+lastMora(siriCur.w)+'」から はじまる ことばは？'); return; }
+  if(curWord){ const label=(wordMode==='first')?'さいしょ':'おわり'; speak(curWord.w+'。 '+label+'の おとは？'); }
+}
+
+/* ============ かず・けいさん ============ */
+let numMode='count';
+function setNumMode(m){
+  if(!numUnlocked(m)){ speak('まだ ひみつだよ。 レベルアップ したら あそべるよ'); return; }
+  numMode=m; renderNumSubmodes();
+  document.querySelectorAll('#num .submodes button').forEach(b=>b.classList.remove('sel'));
+  document.getElementById('sm-'+m).classList.add('sel'); newNum();
+}
+let curNumAns=0, curNumSay='';
+function newNum(){
+  const pic=document.getElementById('numPrompt'); const lvl=S.levels.num;
+  if(numMode==='count'){
+    const max=lvl===1?5:lvl===2?10:15;
+    const n=1+Math.floor(Math.random()*max);
+    curNumAns=n; curNumSay='いくつ かな？';
+    pic.innerHTML='🍓'.repeat(n)+'<br><span style="font-size:.7em">いくつ？</span>';
+  }else if(numMode==='add'){
+    const r=lvl===1?3:lvl===2?5:9;
+    const a=1+Math.floor(Math.random()*r), b=1+Math.floor(Math.random()*r);
+    curNumAns=a+b; curNumSay=a+' たす '+b+' は？';
+    pic.innerHTML='🍓'.repeat(a)+' ＋ '+'🍏'.repeat(b)+'<br><span style="font-size:.7em">'+a+' ＋ '+b+' ＝ ？</span>';
+  }else{ // sub
+    const max=lvl===1?6:lvl===2?10:20;
+    const a=2+Math.floor(Math.random()*(max-1)), b=1+Math.floor(Math.random()*(a-1));
+    curNumAns=a-b; curNumSay=a+' ひく '+b+' は？';
+    pic.innerHTML=a+' － '+b+' ＝ ？';
+  }
+  // 選択肢（正解＋近い数）。レベル3は4択で少し難しく
+  const nChoice=lvl>=3?4:3, spread=lvl>=3?4:2;
+  const opts=new Set([curNumAns]);
+  while(opts.size<nChoice){ let d=curNumAns+(Math.floor(Math.random()*(spread*2+1))-spread); if(d>=0) opts.add(d); }
+  const q=buildChoices('numChoices', shuffle([...opts]), curNumAns, ()=>wrongNext('num', newNum));
+  q.setCorrect(()=>{ answerCorrect('num',{praise:'すごい！', next:newNum}); });
+  sayNum();
+}
+function sayNum(){ speak(curNumSay); }
+
+/* ============ カタカナ（よむ／ひらがな⇔カタカナ／ことば） ============ */
+const KATA = ['ア','イ','ウ','エ','オ','カ','キ','ク','ケ','コ','サ','シ','ス','セ','ソ','ナ','ニ','ヌ','ネ','ノ','ハ','ヒ','フ','ヘ','ホ','マ','ミ','ム','メ','モ'];
+// 清音の対応表（同じ位置＝同じ読み）
+const HIRA_SEION='あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをん';
+const KATA_SEION='アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン';
+// カタカナことば（絵→単語）
+const KATA_WORDS=[
+  {e:'🍌',w:'バナナ'},{e:'🦁',w:'ライオン'},{e:'🐼',w:'パンダ'},{e:'🍅',w:'トマト'},
+  {e:'🎹',w:'ピアノ'},{e:'🍞',w:'パン'},{e:'🚌',w:'バス'},{e:'🍨',w:'アイス'},
+  {e:'🧀',w:'チーズ'},{e:'🍮',w:'プリン'},{e:'🐨',w:'コアラ'},{e:'🍕',w:'ピザ'},
+  {e:'🥛',w:'ミルク'},{e:'🍫',w:'チョコ'},{e:'🚕',w:'タクシー'},{e:'🎂',w:'ケーキ'},
+  {e:'📷',w:'カメラ'},{e:'👕',w:'シャツ'},{e:'🍜',w:'ラーメン'},{e:'🤖',w:'ロボット'}
+];
+let kataMode='read', curKata='', curKataSay='';
+function setKataMode(m){
+  if(!kataUnlocked(m)){ speak('まだ ひみつだよ。 レベルアップ したら あそべるよ'); return; }
+  kataMode=m; renderKataSubmodes();
+  document.querySelectorAll('#kata .submodes button').forEach(b=>b.classList.remove('sel'));
+  const el=document.getElementById({read:'km-read',match:'km-match',word:'km-word'}[m]); if(el) el.classList.add('sel');
+  newKata();
+}
+function newKata(){
+  const lvl=S.levels.kata, nChoice=lvl>=3?4:3;
+  const pic=document.getElementById('kataPic'), prompt=document.getElementById('kataPrompt');
+  if(kataMode==='match'){
+    // ひらがな→同じ読みのカタカナを選ぶ
+    const range=lvl===2?20:HIRA_SEION.length;
+    const idx=Math.floor(Math.random()*range);
+    const hira=HIRA_SEION[idx], correct=KATA_SEION[idx];
+    curKata=correct; curKataSay=hira+'　と おなじ よみの カタカナは？';
+    pic.style.display='block'; pic.textContent=hira;
+    prompt.textContent='「'+hira+'」と おなじ よみの カタカナは？';
+    const others=sample([...KATA_SEION], nChoice-1, [correct]);
+    const q=buildChoices('kataChoices', shuffle([correct,...others]), correct, ()=>wrongNext('kata', newKata));
+    q.setCorrect(()=>{ answerCorrect('kata',{praise:'せいかい！', next:newKata}); });
+  } else if(kataMode==='word'){
+    // 絵→カタカナことばを選ぶ
+    const item=rnd(KATA_WORDS);
+    curKata=item.w; curKataSay=item.w+'　は どれかな？';
+    pic.style.display='block'; pic.textContent=item.e;
+    prompt.textContent='「'+item.w+'」は どれかな？';
+    const others=sample(KATA_WORDS.map(x=>x.w), nChoice-1, [item.w]);
+    const q=buildChoices('kataChoices', shuffle([item.w,...others]), item.w, ()=>wrongNext('kata', newKata));
+    q.setCorrect(()=>{ answerCorrect('kata',{praise:'せいかい！', next:newKata}); });
+    // 単語は長いので文字を小さめに
+    document.querySelectorAll('#kataChoices .choice').forEach(b=>b.classList.add('wordcard'));
+  } else {
+    // よむ（従来）
+    pic.style.display='none';
+    const pool=KATA.slice(0, lvl===1?10:lvl===2?20:KATA.length);
+    const choices=sample(pool,nChoice);
+    curKata=rnd(choices); curKataSay=curKata+'　は どれかな？';
+    prompt.textContent='「'+curKata+'」は どれかな？';
+    const q=buildChoices('kataChoices', choices, curKata, ()=>wrongNext('kata', newKata));
+    q.setCorrect(()=>{ answerCorrect('kata',{praise:'せいかい！', next:newKata}); });
+  }
+  sayKata();
+}
+function sayKata(){ if(curKataSay) speak(curKataSay); }
+
+/* ============ ひらがなを かく（なぞり書き＋判定） ============ */
+// なぞり書きは かんたんな形→むずかしい形 の順にレベル分け
+const HIRA_L={
+  1:['く','し','つ','へ','の','こ','い','り','て','そ'],
+  2:['か','き','さ','た','ち','と','な','に','は','ほ','ま','み','も','ら','れ'],
+  3:['あ','お','え','ぬ','ね','む','わ','ふ','せ','す','ゆ','よ','や','ろ','ん']
+};
+// カタカナ（かくのレベル2で解放）
+const KATA_L={
+  1:['ノ','フ','ヘ','ト','リ','イ','ソ','ル','レ','ハ'],
+  2:['ア','ウ','エ','オ','カ','キ','ク','コ','サ','シ','ス','セ','タ','チ','ナ'],
+  3:['ネ','ホ','マ','ミ','ム','メ','モ','ヌ','ヲ','ン','ヤ','ユ','ヨ','ワ','テ']
+};
+let writeMode='hira';
+function setWriteMode(m){
+  if(!writeUnlocked(m)){ speak('まだ ひみつだよ。 レベルアップ したら あそべるよ'); return; }
+  writeMode=m; renderWriteSubmodes();
+  document.querySelectorAll('#write .submodes button').forEach(b=>b.classList.remove('sel'));
+  const el=document.getElementById({hira:'ws-hira',kata:'ws-kata'}[m]); if(el) el.classList.add('sel');
+  newWrite();
+}
+let curWrite='', ctx=null, drawing=false, cv=null;
+let inkCv=null, inkCtx=null;         // ユーザーが書いた線だけを持つ裏キャンバス
+let glyphMask=null, glyphCount=0;    // お手本の文字の形（判定用マスク）
+let lastX=0, lastY=0;
+function writeFont(px){ return "600 "+px+"px 'Klee One','Hiragino Maru Gothic ProN','Yu Gothic',sans-serif"; }
+function newWrite(){
+  const sets=(writeMode==='kata')?KATA_L:HIRA_L;
+  curWrite = rnd(sets[S.levels.write]||sets[1]);
+  document.getElementById('writePrompt').textContent = '「'+curWrite+'」を なぞって かこう！';
+  setupCanvas();
+  const render = ()=>{ drawTemplate(); buildMask(); };
+  // 教科書体フォントの読み込みを待ってから描く（き・さ 等を正しい形に）
+  if(document.fonts && document.fonts.load){
+    document.fonts.load(writeFont(cv.height*0.72)).then(render).catch(render);
+  } else { render(); }
+  speak(curWrite+'　を なぞって かこう');
+}
+function setupCanvas(){
+  cv = document.getElementById('traceCanvas');
+  const size = Math.min(window.innerWidth-60, window.innerHeight-320, 460);
+  cv.width=size; cv.height=size; cv.style.width=size+'px'; cv.style.height=size+'px';
+  ctx = cv.getContext('2d');
+  const pen = size*0.05;
+  ctx.lineCap='round'; ctx.lineJoin='round'; ctx.lineWidth=pen;
+  // 書いた線だけの裏キャンバス
+  inkCv = document.createElement('canvas'); inkCv.width=size; inkCv.height=size;
+  inkCtx = inkCv.getContext('2d');
+  inkCtx.lineCap='round'; inkCtx.lineJoin='round'; inkCtx.lineWidth=pen; inkCtx.strokeStyle='#000';
+  cv.onpointerdown=e=>{ drawing=true; const p=pos(e); lastX=p.x; lastY=p.y; dot(p.x,p.y); };
+  cv.onpointermove=e=>{ if(!drawing)return; const p=pos(e); seg(lastX,lastY,p.x,p.y); lastX=p.x; lastY=p.y; };
+  cv.onpointerup=()=>{ drawing=false; };
+  cv.onpointerleave=()=>{ drawing=false; };
+}
+function pos(e){ const r=cv.getBoundingClientRect(); return { x:(e.clientX-r.left)*(cv.width/r.width), y:(e.clientY-r.top)*(cv.height/r.height) }; }
+function seg(x0,y0,x1,y1){
+  ctx.strokeStyle='#ff8fb1'; ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x1,y1); ctx.stroke();
+  inkCtx.beginPath(); inkCtx.moveTo(x0,y0); inkCtx.lineTo(x1,y1); inkCtx.stroke();
+}
+function dot(x,y){ seg(x,y,x+0.1,y+0.1); }
+function drawTemplate(){
+  ctx.clearRect(0,0,cv.width,cv.height);
+  ctx.fillStyle='rgba(120,90,60,0.15)';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.font=writeFont(cv.height*0.72);
+  ctx.fillText(curWrite, cv.width/2, cv.height/2);
+}
+function buildMask(){
+  // お手本の文字を少し太らせてマスク化（多少はみ出ても正解にする余裕）
+  const m=document.createElement('canvas'); m.width=cv.width; m.height=cv.height;
+  const mc=m.getContext('2d');
+  mc.textAlign='center'; mc.textBaseline='middle';
+  mc.font=writeFont(cv.height*0.72);
+  mc.fillStyle='#000'; mc.strokeStyle='#000'; mc.lineJoin='round'; mc.lineWidth=cv.width*0.12;
+  mc.strokeText(curWrite, cv.width/2, cv.height/2);
+  mc.fillText(curWrite, cv.width/2, cv.height/2);
+  const d=mc.getImageData(0,0,m.width,m.height).data;
+  glyphMask=new Uint8Array(m.width*m.height); glyphCount=0;
+  for(let p=0,i=0; p<glyphMask.length; p++, i+=4){ if(d[i+3]>10){ glyphMask[p]=1; glyphCount++; } }
+}
+function clearTrace(){
+  drawTemplate();
+  if(inkCtx) inkCtx.clearRect(0,0,inkCv.width,inkCv.height);
+}
+function finishWrite(){
+  if(!inkCtx || !glyphMask){ return; }
+  const d=inkCtx.getImageData(0,0,inkCv.width,inkCv.height).data;
+  let userTotal=0, inside=0, covered=0;
+  for(let p=0,i=0; p<glyphMask.length; p++, i+=4){
+    const hasInk = d[i+3]>10;
+    if(hasInk){ userTotal++; if(glyphMask[p]) inside++; }
+    if(glyphMask[p] && hasInk) covered++;
+  }
+  const onTarget = userTotal ? inside/userTotal : 0;      // なぞった線のうち、文字の上にのった割合
+  const coverage = glyphCount ? covered/glyphCount : 0;   // 文字ぜんたいのうち、なぞれた割合
+  const drewEnough = userTotal >= glyphCount*0.18;
+  if(!drewEnough){
+    speak('もっと なぞってね'); celebrate('✏️','もっと なぞってね！','もういちど かいてみよ'); clearTrace(); return;
+  }
+  let emoji, title;
+  if(onTarget>=0.72 && coverage>=0.45){ emoji='🌸'; title='はなまる！ じょうず！'; }
+  else if(onTarget>=0.5){ emoji='😊'; title='いいね！'; }
+  else { // はみ出しが多い → やりなおし（ストリークはやさしく-1）
+    speak('もうちょっと！'); handleWrong('write'); celebrate('💪','もうちょっと！','もじの うえを なぞってみよ'); clearTrace(); return;
+  }
+  answerCorrect('write',{praise:title, emoji:emoji, next:newWrite, delay:1100});
+}
+
+/* ============ 画面きりかえ ============ */
+function go(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if(id==='word'){ renderWordSubmodes(); if(!wordUnlocked(wordMode)) wordMode='first'; setWordMode(wordMode); }
+  if(id==='num'){ renderNumSubmodes(); if(!numUnlocked(numMode)) numMode='count'; setNumMode(numMode); }
+  if(id==='kata'){ renderKataSubmodes(); if(!kataUnlocked(kataMode)) kataMode='read'; setKataMode(kataMode); }
+  if(id==='write'){ renderWriteSubmodes(); if(!writeUnlocked(writeMode)) writeMode='hira'; setWriteMode(writeMode); }
+  if(id==='help') renderChores();
+  if(id==='shop') renderShop();
+  if(id==='zukan') renderZukan();
+}
+
+/* ============ おてつだい ============ */
+// リストは S.chores（保護者設定で編集可能）。max = 1日に なんかい できるか
+function choreDone(id){ return S.choreCounts[id]||0; }
+function renderChores(){
+  const box=document.getElementById('choreList'); box.innerHTML='';
+  S.chores.forEach(c=>{
+    const cnt=choreDone(c.id), full=cnt>=c.max;
+    const times = (c.max>1) ? ' <small>('+cnt+'/'+c.max+')</small>' : (cnt?' <small>✓</small>':'');
+    const row=document.createElement('div'); row.className='chore'+(full?' claimed':'');
+    row.innerHTML=`<span class="cemoji">${c.emoji}</span><span class="cname">${c.name}${times}</span><span class="cpt">${c.pt}pt</span>`;
+    const btn=document.createElement('button'); btn.className='doneBtn'; btn.textContent=full?'できた✓':'できた！';
+    btn.onclick=()=>claimChore(c); row.appendChild(btn); box.appendChild(row);
+  });
+}
+function claimChore(c){
+  if(choreDone(c.id)>=c.max) return;             // その日の かいすう上限に たっしたら おわり
+  S.choreCounts[c.id]=choreDone(c.id)+1; S.points+=c.pt;   // おてつだいpt は 上限の対象がい（実タスク）
+  todayLog().chore+=1;
+  const total=Object.values(S.choreCounts).reduce((a,b)=>a+b,0);
+  if(total>=5) grantSticker('chore');
+  save();
+  speak('えらい！'); celebrate('🌟','よく できました！','+'+c.pt+' ポイント'); renderChores();
+}
+
+/* ============ ショップ ============ */
+// 時間を えらんで こうかん（1ぷん = ptPerMin ポイント）
+const YT_OPTS=[5,10,15,20], SW_OPTS=[15,20,25,30];
+// 5分=1pt（minPerPt＝なんぷんで1ポイント、保護者設定で変更可）
+function costOf(min){ return Math.max(1, Math.ceil(min/S.minPerPt)); }
+function renderShop(){
+  const box=document.getElementById('rewardList'); box.innerHTML='';
+  addRewardRow(box,'🎬','YouTube Kids', YT_OPTS, getYouTube);
+  addRewardRow(box,'🎮','Switch', SW_OPTS, getSwitch);
+  // 実物ごほうび（S.rewards＝保護者設定で自由に編集できる）
+  S.rewards.forEach(r=> addRealRow(box, r.e, r.n, r.cost));
+}
+/* こうかん履歴に1件記録（kind: real=実物 / time=時間 / adjust=手動調整） */
+function recordHistory(name, cost, kind){
+  const d=new Date();
+  S.history.unshift({ id:'h'+Date.now()+Math.floor(Math.random()*1000), day:todayStr(),
+    time:String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'),
+    name:name, cost:cost, kind:kind });
+  if(S.history.length>50) S.history.length=50;
+}
+// 実物ごほうび：確認をはさんでから交換（誤タップで大ポイント消失を防ぐ）
+function addRealRow(box,emoji,name,cost){
+  const row=document.createElement('div'); row.className='reward';
+  row.innerHTML=`<span class="remoji">${emoji}</span><span class="rname">${name}</span><span class="rcost">${cost}pt</span>`;
+  const btn=document.createElement('button'); btn.className='getBtn'; btn.textContent='こうかん';
+  btn.disabled=S.points<cost;
+  btn.onclick=()=>askReal(emoji,name,cost);
+  row.appendChild(btn); box.appendChild(row);
+}
+let pendingReal=null;
+function askReal(emoji,name,cost){
+  pendingReal={emoji,name,cost};
+  document.getElementById('confirmEmoji').textContent=emoji;
+  document.getElementById('confirmMsg').textContent='「'+name+'」に '+cost+'ポイント つかうよ。ほんとうに こうかんする？';
+  document.getElementById('confirm').classList.add('active');
+  speak('ほんとうに こうかんする？');
+}
+function realYes(){
+  const r=pendingReal; pendingReal=null;
+  closeOverlay('confirm');
+  if(!r || S.points<r.cost) return;
+  S.points-=r.cost; grantSticker('firstReward');
+  todayLog().spent+=r.cost; recordHistory(r.emoji+' '+r.name, r.cost, 'real');
+  save();
+  speak('おめでとう！ ママに みせてね！');
+  celebrate('🎫','こうかんチケット GET！', r.emoji+' '+r.name+'（'+r.cost+'pt）— この がめんを ママに みせてね！');
+  renderShop();
+}
+function realNo(){ pendingReal=null; closeOverlay('confirm'); }
+function addRewardRow(box,emoji,name,opts,act){
+  const row=document.createElement('div'); row.className='reward';
+  row.innerHTML=`<span class="remoji">${emoji}</span><span class="rname">${name}</span>`;
+  const chips=document.createElement('div'); chips.className='timeChips';
+  opts.forEach(m=>{
+    const cost=costOf(m);
+    const b=document.createElement('button'); b.textContent=m+'ぷん ('+cost+'pt)';
+    b.disabled=S.points<cost;
+    b.onclick=()=>{ if(S.points>=cost){ S.points-=cost; grantSticker('firstReward');
+      todayLog().spent+=cost; recordHistory(emoji+' '+name+' '+m+'ぷん', cost, 'time'); save(); act(m); } };
+    chips.appendChild(b);
+  });
+  row.appendChild(chips); box.appendChild(row);
+}
+function getYouTube(min){ celebrate('🎬','いってらっしゃい！','YouTube Kids を '+min+'ぷん みようね'); setTimeout(()=>window.open('https://www.youtubekids.com/','_blank'),800); }
+let timerIv=null, warned5=false, warned1=false, timerPhase='play';
+let endAt=0, lastNudge=0, wakeLock=null;
+// 画面を眠らせない（スリープでタイマーが止まらないように）
+async function requestWake(){ try{ if('wakeLock' in navigator){ wakeLock = await navigator.wakeLock.request('screen'); } }catch(e){} }
+function releaseWake(){ try{ if(wakeLock){ wakeLock.release(); wakeLock=null; } }catch(e){} }
+// 画面に戻ってきたら、ロックを取り直して実時刻で表示を追いつかせる
+document.addEventListener('visibilitychange', ()=>{
+  if(document.visibilityState==='visible' && document.getElementById('timer').classList.contains('active')){
+    requestWake(); tickTimer();
+  }
+});
+function getSwitch(min){
+  const dur = min||S.swMin;
+  warned5=false; warned1=false; timerPhase='play'; lastNudge=0;
+  endAt = Date.now() + dur*60*1000;   // 終わりの「時刻」を決める（実時計で判定）
+  // タイマー画面を「あそび中」の見た目にリセット
+  document.getElementById('ghost').style.display='none';
+  document.getElementById('timerTitle').textContent='🎮 スイッチ タイム（'+dur+'ぷん）';
+  document.getElementById('timerMsg').textContent='タイマーが なったら おしまいだよ';
+  document.getElementById('timerBtns').innerHTML='<button onclick="stopTimer()" style="background:#eee;">タイマーを とめる</button>';
+  document.getElementById('timer').classList.add('active');
+  speak('スイッチ タイム すたーと'); requestWake();
+  clearInterval(timerIv); timerIv=setInterval(tickTimer,1000); tickTimer();
+}
+// 毎秒＆画面復帰時に、実時刻から残り/超過を計算しなおす（一瞬止まっても追いつく）
+function tickTimer(){
+  const now=Date.now();
+  if(timerPhase==='play'){
+    const remain=Math.round((endAt-now)/1000);
+    if(remain>0){
+      updateTimerNum(remain);
+      if(remain<=300 && !warned5){ warned5=true; speak('あと ５ふん だよー'); ding(); }
+      if(remain<=60  && !warned1){ warned1=true; speak('あと １ぷん！ もうすぐ おしまいだよ'); ding(); }
+    } else { enterGrace(); }
+  } else {
+    const over=Math.floor((now-endAt)/1000);
+    document.getElementById('timerNum').textContent='＋'+fmtSec(Math.max(0,over));
+    if(timerPhase==='grace'){
+      if(over>=lastNudge+60){ lastNudge=Math.floor(over/60)*60; speak('まだかなー？ やめられるかな？'); ding(); }
+      if(over >= S.graceMin*60){ enterGhost(); }
+    }
+  }
+}
+// ① 終わり時間：やさしく案内だけ（おばけはまだ出さない）
+function enterGrace(){
+  timerPhase='grace'; lastNudge=0;
+  document.getElementById('ghost').style.display='none';
+  document.getElementById('timerTitle').textContent='⏰ おしまいの じかんだよ';
+  document.getElementById('timerNum').textContent='＋0:00';
+  document.getElementById('timerMsg').textContent='タイマーを とめて やめられたら はなまる！';
+  document.getElementById('timerBtns').innerHTML='<button onclick="claimStopBonus()" style="background:var(--green);color:#fff;">やめられたよ！</button>';
+  speak('おしまいの じかんだよ。 やめられたら はなまる！'); ding();
+}
+// ③ 全然やめられない → おばけ登場
+function enterGhost(){
+  timerPhase='ghost';
+  document.getElementById('ghost').style.display='block';
+  document.getElementById('timerTitle').textContent='👻 おばけだぞぉ！';
+  document.getElementById('timerMsg').textContent='まだ やめてないよー！ はやく タイマーを とめて！';
+  speak('おばけだぞぉ！ まだ やめてないよー。 はやく やめてー！'); alarm();
+}
+// ② やめられた
+function claimStopBonus(){
+  clearInterval(timerIv); releaseWake();
+  const inTime = (timerPhase==='grace'); // おばけが来る前にやめられたか
+  closeOverlay('timer');
+  if(inTime){
+    S.points += S.stopBonus; save();
+    speak('やめられて えらい！ はなまる！');
+    celebrate('🌸','やめられて えらい！','ボーナス +'+S.stopBonus+' ポイント！');
+  } else {
+    save();
+    speak('やっと やめられたね。 つぎは じかんに やめようね');
+    celebrate('😊','やめられたね','つぎは おばけが くるまえに やめられるかな？');
+  }
+}
+function fmtSec(s){ return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
+function updateTimerNum(sec){ const m=String(Math.floor(sec/60)).padStart(2,'0'), s=String(sec%60).padStart(2,'0'); document.getElementById('timerNum').textContent=m+':'+s; }
+function stopTimer(){ clearInterval(timerIv); releaseWake(); closeOverlay('timer'); }
+function ding(){ try{ const c=new (window.AudioContext||window.webkitAudioContext)(); const o=c.createOscillator(),g=c.createGain();
+  o.frequency.value=660; o.connect(g); g.connect(c.destination); g.gain.setValueAtTime(0.15,c.currentTime); o.start(); o.stop(c.currentTime+0.25); }catch(e){} }
+function alarm(){ try{ const c=new (window.AudioContext||window.webkitAudioContext)();
+  [0,0.4,0.8].forEach(t=>{ const o=c.createOscillator(),g=c.createGain(); o.frequency.value=880; o.connect(g); g.connect(c.destination);
+    g.gain.setValueAtTime(0.2,c.currentTime+t); o.start(c.currentTime+t); o.stop(c.currentTime+t+0.3); }); }catch(e){} }
+
+/* ============ おいわい ============ */
+function celebrate(emoji,title,msg){ document.getElementById('celeEmoji').textContent=emoji; document.getElementById('celeTitle').textContent=title; document.getElementById('celeMsg').textContent=msg; document.getElementById('celebrate').classList.add('active'); }
+function closeOverlay(id){ document.getElementById(id).classList.remove('active'); }
+
+/* ============ PIN・設定 ============ */
+let pinInput='';
+document.getElementById('gearBtn').onclick=()=>{ pinInput=''; renderPin(); document.getElementById('pin').classList.add('active'); };
+function pinKey(n){ if(pinInput.length<4){ pinInput+=n; renderPin(); if(pinInput.length===4) checkPin(); } }
+function pinDel(){ pinInput=pinInput.slice(0,-1); renderPin(); }
+function renderPin(){ document.getElementById('pinDisplay').textContent='●'.repeat(pinInput.length); }
+function checkPin(){ setTimeout(()=>{ if(pinInput===S.pin){ closeOverlay('pin'); openSettings(); } else{ document.getElementById('pinDisplay').textContent='ちがうよ'; pinInput=''; } },200); }
+function openSettings(){
+  document.getElementById('setMinPerPt').value=S.minPerPt; document.getElementById('setStopBonus').value=S.stopBonus;
+  document.getElementById('setGraceMin').value=S.graceMin; document.getElementById('setDailyCap').value=S.dailyCap;
+  document.getElementById('setPin').value='';
+  var _kn=document.getElementById('setKidName'); if(_kn) _kn.value=S.kidName||'';
+  const capTxt=(S.dailyCap>0)?(' / '+S.dailyCap):'（むせいげん）';
+  document.getElementById('todayInfo').textContent='きょうの おべんきょうポイント：'+S.earnedToday+capTxt
+    +'　｜　レベル ことば'+S.levels.word+'・かず'+S.levels.num+'・カタカナ'+S.levels.kata+'・かく'+S.levels.write;
+  renderRewardEditor(); renderChoreEditor(); renderHistory(); renderDailyLog();
+  markMode(); document.getElementById('settings').classList.add('active');
+}
+function setMode(m){ S.mode=m; markMode(); }
+function markMode(){ document.getElementById('mWeekday').classList.toggle('sel',S.mode==='weekday'); document.getElementById('mHoliday').classList.toggle('sel',S.mode==='holiday'); }
+function saveSettings(){
+  S.minPerPt=+document.getElementById('setMinPerPt').value||5;
+  S.stopBonus=+document.getElementById('setStopBonus').value||0;
+  S.graceMin=+document.getElementById('setGraceMin').value||5;
+  const cap=parseInt(document.getElementById('setDailyCap').value,10); S.dailyCap=isNaN(cap)?5:Math.max(0,cap); // 0=むせいげん
+  // エディタ内の入力（名前・値段・回数）を反映
+  collectRewardEdits(); collectChoreEdits();
+  // PIN変更（4桁の数字が入っていたときだけ）
+  const pin=document.getElementById('setPin').value.trim();
+  if(/^\d{4}$/.test(pin)) S.pin=pin;
+  const _kn=document.getElementById('setKidName'); if(_kn) S.kidName=_kn.value.trim();
+  save(); closeOverlay('settings');
+}
+function resetDay(){ S.correctCount=0; S.choreCounts={}; S.earnedToday=0; S.pageProg=0; S.streaks={word:0,num:0,kata:0,write:0}; save(); closeOverlay('settings'); }
+function resetLevels(){ S.levels={word:1,num:1,kata:1,write:1}; S.streaks={word:0,num:0,kata:0,write:0}; save(); openSettings(); }
+
+/* ============ 🎁 ごほうびエディタ ============ */
+const REWARD_EMOJIS=['🎰','🧸','📚','🍦','🍭','🎪','🎨','🚲','🎂','👗'];
+const CHORE_EMOJIS=['🧹','🌷','🐟','👟','🛒','📮','🍳','🧻','🪟','🧦'];
+function renderRewardEditor(){
+  const box=document.getElementById('rewardEditor'); box.innerHTML='';
+  S.rewards.forEach(r=>{
+    const row=document.createElement('div'); row.className='editRow'; row.dataset.rid=r.id;
+    row.innerHTML=`<input class="emojiIn" maxlength="2" value="${r.e}">
+      <input class="nameIn" value="${r.n.replace(/"/g,'&quot;')}">
+      <input class="numIn" type="number" min="1" value="${r.cost}">`;
+    const del=document.createElement('button'); del.className='delBtn'; del.textContent='けす';
+    del.onclick=()=>{ S.rewards=S.rewards.filter(x=>x.id!==r.id); save(); renderRewardEditor(); };
+    row.appendChild(del); box.appendChild(row);
+  });
+  fillEmojiPick('rewardEmojiPick', REWARD_EMOJIS, 'newRewardEmoji');
+}
+function collectRewardEdits(){
+  document.querySelectorAll('#rewardEditor .editRow').forEach(row=>{
+    const r=S.rewards.find(x=>x.id===row.dataset.rid); if(!r) return;
+    const ins=row.querySelectorAll('input');
+    r.e=ins[0].value.trim()||r.e; r.n=ins[1].value.trim()||r.n; r.cost=Math.max(1,+ins[2].value||r.cost);
+  });
+}
+function addReward(){
+  const e=document.getElementById('newRewardEmoji').value.trim()||'🎁';
+  const n=document.getElementById('newRewardName').value.trim();
+  const cost=Math.max(1,+document.getElementById('newRewardCost').value||0);
+  if(!n||!cost){ alert('なまえと ポイントを いれてね'); return; }
+  collectRewardEdits();                       // 入力途中の編集を失わない
+  S.rewards.push({id:'r'+Date.now(), e:e, n:n, cost:cost});
+  document.getElementById('newRewardName').value=''; document.getElementById('newRewardCost').value=''; document.getElementById('newRewardEmoji').value='';
+  save(); renderRewardEditor();
+}
+function fillEmojiPick(boxId, emojis, targetId){
+  const box=document.getElementById(boxId); if(box.children.length) return; // 一度だけ
+  emojis.forEach(e=>{ const b=document.createElement('button'); b.textContent=e;
+    b.onclick=()=>{ document.getElementById(targetId).value=e; }; box.appendChild(b); });
+}
+
+/* ============ 🧺 おてつだいエディタ ============ */
+function renderChoreEditor(){
+  const box=document.getElementById('choreEditor'); box.innerHTML='';
+  S.chores.forEach(c=>{
+    const row=document.createElement('div'); row.className='editRow'; row.dataset.cid=c.id;
+    row.innerHTML=`<input class="emojiIn" maxlength="2" value="${c.emoji}">
+      <input class="nameIn" value="${c.name.replace(/"/g,'&quot;')}">
+      <input class="numIn" type="number" min="1" value="${c.pt}" title="pt">
+      <input class="numIn" type="number" min="1" value="${c.max}" title="かいすう">`;
+    const del=document.createElement('button'); del.className='delBtn'; del.textContent='けす';
+    del.onclick=()=>{ S.chores=S.chores.filter(x=>x.id!==c.id); save(); renderChoreEditor(); };
+    row.appendChild(del); box.appendChild(row);
+  });
+  fillEmojiPick('choreEmojiPick', CHORE_EMOJIS, 'newChoreEmoji');
+}
+function collectChoreEdits(){
+  document.querySelectorAll('#choreEditor .editRow').forEach(row=>{
+    const c=S.chores.find(x=>x.id===row.dataset.cid); if(!c) return;
+    const ins=row.querySelectorAll('input');
+    c.emoji=ins[0].value.trim()||c.emoji; c.name=ins[1].value.trim()||c.name;
+    c.pt=Math.max(1,+ins[2].value||c.pt); c.max=Math.max(1,+ins[3].value||c.max);
+  });
+}
+function addChore(){
+  const e=document.getElementById('newChoreEmoji').value.trim()||'🧹';
+  const n=document.getElementById('newChoreName').value.trim();
+  const pt=Math.max(1,+document.getElementById('newChorePt').value||0);
+  const mx=Math.max(1,+document.getElementById('newChoreMax').value||1);
+  if(!n||!pt){ alert('なまえと ポイントを いれてね'); return; }
+  collectChoreEdits();
+  S.chores.push({id:'c'+Date.now(), emoji:e, name:n, pt:pt, max:mx});
+  document.getElementById('newChoreName').value=''; document.getElementById('newChorePt').value=''; document.getElementById('newChoreMax').value=''; document.getElementById('newChoreEmoji').value='';
+  save(); renderChoreEditor();
+}
+
+/* ============ 🎫 こうかん履歴・とりけし・ポイント調整 ============ */
+function renderHistory(){
+  const box=document.getElementById('histList'); box.innerHTML='';
+  if(!S.history.length){ box.innerHTML='<p style="font-size:14px;color:#aaa;">まだ こうかんは ないよ</p>'; return; }
+  S.history.slice(0,20).forEach(h=>{
+    const row=document.createElement('div'); row.className='histRow'+(h.canceled?' canceled':'');
+    const sign=(h.kind==='adjust'&&h.cost<0)?'+':(h.kind==='adjust'?'−':'−');
+    row.innerHTML=`<span class="hWhen">${h.day.slice(5)} ${h.time}</span>
+      <span class="hName">${h.name}</span><span class="hCost">${sign}${Math.abs(h.cost)}pt</span>`;
+    if(h.kind!=='adjust'){
+      if(h.canceled){ const s=document.createElement('span'); s.className='undone'; s.textContent='もどした✓'; row.appendChild(s); }
+      else{ const b=document.createElement('button'); b.className='undoBtn'; b.textContent='もどす';
+        b.onclick=()=>undoExchange(h.id); row.appendChild(b); }
+    }
+    box.appendChild(row);
+  });
+}
+// 保護者権限：交換をとりけしてポイントを返す（やりすぎた交換の中止・誤交換の救済）
+function undoExchange(id){
+  const h=S.history.find(x=>x.id===id);
+  if(!h || h.canceled || h.kind==='adjust') return;
+  h.canceled=true; S.points+=h.cost;
+  const t=todayLog(); t.spent=Math.max(0, t.spent-h.cost);
+  save(); renderHistory();
+}
+function adjustPoints(sign){
+  const v=Math.max(0,+document.getElementById('adjustPt').value||0);
+  if(!v) return;
+  if(sign>0){ S.points+=v; recordHistory('⭐ ママから おまけ', -v, 'adjust'); }
+  else { const cut=Math.min(v,S.points); S.points-=cut; recordHistory('⭐ ちょうせい（へらす）', cut, 'adjust'); }
+  document.getElementById('adjustPt').value='';
+  save(); renderHistory();
+}
+
+/* ============ 📊 がんばりきろく（7日） ============ */
+function renderDailyLog(){
+  const box=document.getElementById('dailyLogView');
+  const keys=Object.keys(S.dailyLog).sort(dayKeyCmp).slice(-7).reverse();
+  if(!keys.length){ box.innerHTML='<p style="font-size:14px;color:#aaa;">まだ きろくが ないよ</p>'; return; }
+  let html='<table class="logTbl"><tr><th>ひにち</th><th>べんきょうpt</th><th>おてつだい</th><th>つかったpt</th></tr>';
+  keys.forEach(k=>{ const d=S.dailyLog[k];
+    html+='<tr><td>'+k.slice(5)+'</td><td>'+ (d.study||0) +'</td><td>'+ (d.chore||0) +'かい</td><td>'+ (d.spent||0) +'</td></tr>'; });
+  box.innerHTML=html+'</table>';
+}
+
+/* ============ 描画 ============ */
+function render(){
+  document.getElementById('ptVal').textContent=S.points;
+  var _hg=document.getElementById('homeGreet'); if(_hg) _hg.textContent=(S.kidName? S.kidName+'の ':'')+'🏦 がんばりバンク';
+  document.getElementById('modeBadge').textContent=(S.mode==='weekday')?'へいじつ':'おやすみ';
+  const need=(S.mode==='weekday')?3:5;
+  document.getElementById('pageMeter').textContent='📖'+'●'.repeat(S.pageProg)+'○'.repeat(Math.max(0,need-S.pageProg));
+  renderLevels();
+}
+render();
+
+/* ============ アプリ化（オフライン対応） ============ */
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{ navigator.serviceWorker.register('./sw.js').catch(()=>{}); });
+}
+</script>
+</body>
+</html>
