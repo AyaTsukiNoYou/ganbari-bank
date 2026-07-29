@@ -970,7 +970,22 @@ function addRewardRow(box,emoji,name,opts,act){
   });
   row.appendChild(chips); box.appendChild(row);
 }
-function getYouTube(min){ celebrate('🎬','いってらっしゃい！','YouTube Kids を '+min+'ぷん みようね'); setTimeout(()=>window.open('https://www.youtubekids.com/','_blank'),800); }
+const YT_URL='https://www.youtubekids.com/';
+function getYouTube(min){
+  // ★ window.open は「ボタンを押した瞬間」に呼ばないと、ブラウザのポップアップブロックで
+  //    だまって消される。以前は演出のため setTimeout(...,800) の中で開いていたので起動しなかった。
+  const w = window.open(YT_URL,'_blank');
+  celebrate('🎬','いってらっしゃい！','YouTube Kids を '+min+'ぷん みようね');
+  if(!w){
+    // ブロックされた時のたすけ舟：自分の指で押したリンクは絶対に止められない
+    const p=document.getElementById('celeMsg');
+    const a=document.createElement('a');
+    a.href=YT_URL; a.target='_blank'; a.rel='noopener';
+    a.textContent='▶ ここを おして ひらこう！';
+    a.style.cssText='display:block;margin-top:14px;padding:16px;border-radius:14px;background:#ff4757;color:#fff;font-size:20px;font-weight:700;text-decoration:none;';
+    p.appendChild(a);
+  }
+}
 let timerIv=null, warned5=false, warned1=false, timerPhase='play';
 let endAt=0, lastNudge=0, wakeLock=null;
 // 画面を眠らせない（スリープでタイマーが止まらないように）
